@@ -22,7 +22,18 @@ const battClass = (p: number | null) => (p === null ? "bad" : p >= 88 ? "good" :
 type Filters = Record<GroupKey, string[]>;
 const emptyFilters = (): Filters => ({ series: [], model: [], storage: [], region: [], screen: [] });
 
-export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]; error: string; loadedAt: string }) {
+export default function Inventory({
+  phones,
+  error,
+  loadedAt,
+  bare = false,
+}: {
+  phones: Phone[];
+  error: string;
+  loadedAt: string;
+  /** Ẩn dòng giới thiệu, nút liên hệ và chân trang */
+  bare?: boolean;
+}) {
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -138,16 +149,18 @@ export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]
         <header className="head">
           <div>
             <h1>iPhone hàng sẵn HCM</h1>
-            <p className="sub">Lỗ Tuyển · bao mọi thứ 7 ngày · giá theo sheet (nghìn đồng)</p>
+            {!bare && <p className="sub">Lỗ Tuyển · bao mọi thứ 7 ngày · giá theo sheet (nghìn đồng)</p>}
           </div>
-          <div className="contact">
-            <a className="btn primary" href="tel:0393426609">
-              Gọi<span className="full"> 039 342 6609</span>
-            </a>
-            <a className="btn" href="https://zalo.me/g/oezcwz531" target="_blank" rel="noopener noreferrer">
-              <span className="full">Nhóm </span>Zalo<span className="full"> săn sale</span>
-            </a>
-          </div>
+          {!bare && (
+            <div className="contact">
+              <a className="btn primary" href="tel:0393426609">
+                Gọi<span className="full"> 039 342 6609</span>
+              </a>
+              <a className="btn" href="https://zalo.me/g/oezcwz531" target="_blank" rel="noopener noreferrer">
+                <span className="full">Nhóm </span>Zalo<span className="full"> săn sale</span>
+              </a>
+            </div>
+          )}
         </header>
 
         <section className="filters" aria-label="Bộ lọc">
@@ -326,10 +339,12 @@ export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]
         </div>
       )}
 
-      <footer className="foot">
-        Dữ liệu đọc trực tiếp từ Google Sheet “Hàng Sẵn HCM - Lỗ Tuyển” mỗi lần mở trang. Vui lòng gọi xác nhận trước khi
-        qua xem máy.
-      </footer>
+      {!bare && (
+        <footer className="foot">
+          Dữ liệu đọc trực tiếp từ Google Sheet “Hàng Sẵn HCM - Lỗ Tuyển” mỗi lần mở trang. Vui lòng gọi xác nhận trước
+          khi qua xem máy.
+        </footer>
+      )}
 
       <div className={`toast${toast ? " show" : ""}`} role="status" aria-live="polite">
         {toast}
