@@ -34,6 +34,8 @@ export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]
   const [filtersOpen, setFiltersOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const wasRefreshing = useRef(false);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
 
   const options = useMemo(() => {
     const o = {} as Record<GroupKey, string[]>;
@@ -99,6 +101,15 @@ export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshing]);
 
+  // Thanh đầu trang thu gọn lại khi đã cuộn qua nó
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   const reload = () => startRefresh(() => router.refresh());
 
   const doCopy = async (items: Phone[], label: string, stt?: number) => {
@@ -122,71 +133,76 @@ export default function Inventory({ phones, error, loadedAt }: { phones: Phone[]
 
   return (
     <div className="wrap">
-      <header className="head">
-        <div>
-          <h1>iPhone hàng sẵn HCM</h1>
-          <p className="sub">Lỗ Tuyển · bao mọi thứ 7 ngày · giá theo sheet (nghìn đồng)</p>
-        </div>
-        <div className="contact">
-          <a className="btn primary" href="tel:0393426609">Gọi 039 342 6609</a>
-          <a className="btn" href="https://zalo.me/g/oezcwz531" target="_blank" rel="noopener noreferrer">
-            Nhóm Zalo săn sale
-          </a>
-        </div>
-      </header>
-
-      <section className="filters" aria-label="Bộ lọc">
-        <div className="row search">
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Tìm: màu, dung lượng, LL/A…"
-            aria-label="Tìm kiếm"
-          />
-          <button
-            type="button"
-            className="filters-toggle"
-            aria-expanded={filtersOpen}
-            aria-controls="filter-body"
-            onClick={() => setFiltersOpen((v) => !v)}
-          >
-            Lọc
-            {activeCount > 0 && <span className="n">{activeCount}</span>}
-          </button>
-        </div>
-        <div id="filter-body" className={`filters-body${filtersOpen ? " open" : ""}`}>
-          {GROUPS.map(({ key, label }) =>
-            options[key].length ? (
-              <div className="row" key={key}>
-                <span className="lbl">{label}</span>
-                {options[key].map((v) => {
-                  const on = filters[key].includes(v);
-                  const n = phones.filter((p) => p[key] === v && matches(p, key)).length;
-                  return (
-                    <button key={v} type="button" className="chip" aria-pressed={on} onClick={() => toggle(key, v)}>
-                      {v}
-                      <span className="n">{n}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null
-          )}
-          <div className="row">
-            <span className="lbl">Pin tối thiểu</span>
-            <input
-              type="range"
-              min={0}
-              max={95}
-              value={minPin}
-              onChange={(e) => setMinPin(Number(e.target.value))}
-              aria-label="Pin tối thiểu"
-            />
-            <span className="pinval">{minPin ? `≥ ${minPin}%` : "Tất cả"}</span>
+      <div ref={sentinel} className="sentinel" aria-hidden="true" />
+      <div className={`sticky-top${stuck ? " stuck" : ""}`}>
+        <header className="head">
+          <div>
+            <h1>iPhone hàng sẵn HCM</h1>
+            <p className="sub">Lỗ Tuyển · bao mọi thứ 7 ngày · giá theo sheet (nghìn đồng)</p>
           </div>
-        </div>
-      </section>
+          <div className="contact">
+            <a className="btn primary" href="tel:0393426609">
+              Gọi<span className="full"> 039 342 6609</span>
+            </a>
+            <a className="btn" href="https://zalo.me/g/oezcwz531" target="_blank" rel="noopener noreferrer">
+              <span className="full">Nhóm </span>Zalo<span className="full"> săn sale</span>
+            </a>
+          </div>
+        </header>
+
+        <section className="filters" aria-label="Bộ lọc">
+          <div className="row search">
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm: màu, dung lượng, LL/A…"
+              aria-label="Tìm kiếm"
+            />
+            <button
+              type="button"
+              className="filters-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="filter-body"
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
+              Lọc
+              {activeCount > 0 && <span className="n">{activeCount}</span>}
+            </button>
+          </div>
+          <div id="filter-body" className={`filters-body${filtersOpen ? " open" : ""}`}>
+            {GROUPS.map(({ key, label }) =>
+              options[key].length ? (
+                <div className="row" key={key}>
+                  <span className="lbl">{label}</span>
+                  {options[key].map((v) => {
+                    const on = filters[key].includes(v);
+                    const n = phones.filter((p) => p[key] === v && matches(p, key)).length;
+                    return (
+                      <button key={v} type="button" className="chip" aria-pressed={on} onClick={() => toggle(key, v)}>
+                        {v}
+                        <span className="n">{n}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null
+            )}
+            <div className="row">
+              <span className="lbl">Pin tối thiểu</span>
+              <input
+                type="range"
+                min={0}
+                max={95}
+                value={minPin}
+                onChange={(e) => setMinPin(Number(e.target.value))}
+                aria-label="Pin tối thiểu"
+              />
+              <span className="pinval">{minPin ? `≥ ${minPin}%` : "Tất cả"}</span>
+            </div>
+          </div>
+        </section>
+      </div>
 
       <div className="bar">
         <div>
